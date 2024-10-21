@@ -23,10 +23,10 @@ resource "aws_security_group" "sftp-security_group" {
     cidr_blocks = [var.public_ip]
   }
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.public_ip]
   }
   tags = {
     Name = "SFTP Security Group"
