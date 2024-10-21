@@ -1,0 +1,26 @@
+# Terraform files
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+*.terraform
+crash.log
+variables.tf
+
+# AWS credentials and sensitive files
+*.pem
+*.key
+*.pub
+
+# VSCode settings (if applicable)
+.vscode/
+.history/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+*.log
+
+# Other local files you may not want to track
+*.bak
+*.tmp
