@@ -2,6 +2,8 @@
 
 This project sets up a secure SFTP server on an AWS EC2 instance using Terraform to allow secure file transfers between clients and the server.
 
+![SFTP Diagram](./SFTP%20Server.png)
+
 ## Technologies Used
 - AWS EC2 (Ubuntu Linux)
 - SFTP (SSH File Transfer Protocol)
