@@ -3,9 +3,9 @@
 *.tfstate.backup
 *.tfvars
 .terraform/
-*.terraform
+*.terraform*
 crash.log
-variables.tf
+variable.tf
 
 # AWS credentials and sensitive files
 *.pem
