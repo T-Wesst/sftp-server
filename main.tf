@@ -1,31 +1,57 @@
 terraform {
   required_providers {
     aws = {
-        source = "hashicopr/aws"
-        version = "~>4.16"
+      source  = "hashicorp/aws"
+      version = "~>4.16"
     }
   }
   required_version = ">= 1.2.0"
 }
 
 provider "aws" {
-    region = "us-west-2"
-  
+  region = "us-west-2"
+
+}
+
+resource "aws_security_group" "sftp-security_group" {
+  name        = "sftp-sg"
+  description = "Allow SSH and SFTP access"
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.public_ip]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+    Name = "SFTP Security Group"
+  }
+}
+
+output "sftp_server_ip" {
+  value = aws_instance.sftp-us-west-2.public_ip
 }
 
 resource "aws_instance" "sftp-us-west-2" {
-    ami = "ami-04dd23e62ed049936"
-    instance_type = "t2.micro"
-    security_groups = ["sftp-sg"]
-    root_block_devices {
-        volume_size = 8
-        volume_type = "gp3"
-    }
-    tags = {
-        OS = "Ubuntu"
-        Application = "SFTP Server"
-        Name = "SFTP Server"
-        Environment = "Development"
-    }
-  
+  ami             = "ami-04dd23e62ed049936"
+  instance_type   = "t2.micro"
+  key_name        = "sftp-us-west-2"
+  security_groups = [aws_security_group.sftp-security_group.name]
+
+  user_data = base64encode(file("./scripts/setup.sh"))
+  root_block_device {
+    volume_size = 8
+    volume_type = "gp3"
+  }
+  tags = {
+    OS          = "Ubuntu"
+    Name        = "SFTP Server"
+    Environment = "Development"
+  }
+
 }
