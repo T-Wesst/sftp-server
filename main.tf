@@ -11,7 +11,7 @@ terraform {
 provider "aws" {
   region = var.region
 }
-
+# Security Group
 resource "aws_security_group" "sftp-security_group" {
   name        = "sftp-sg"
   description = "Allow SSH and SFTP access"
@@ -44,25 +44,54 @@ resource "aws_security_group" "sftp-security_group" {
   }
 }
 
-output "sftp_server_ip" {
-  value = aws_instance.sftp-us-west-2.public_ip
-}
-
-resource "aws_instance" "sftp-us-west-2" {
-  ami             = var.ami
+# Launch Configuration
+resource "aws_launch_configuration" "sftp-launch-config" {
+  image_id        = var.ami
+  name            = "sftp-launch-config"
   instance_type   = "t2.micro"
   key_name        = var.key_name
   security_groups = [aws_security_group.sftp-security_group.name]
 
+  # Cloud-init script
   user_data = base64encode(file("./scripts/setup.sh"))
   root_block_device {
+    # root block size
     volume_size = 8
+    # general purpose ssd
     volume_type = "gp3"
   }
-  tags = {
-    OS          = "Ubuntu"
-    Name        = "SFTP Server"
-    Environment = "Development"
+  lifecycle {
+    create_before_destroy = true
   }
-
 }
+
+# Auto Scaling Group
+resource "aws_autoscaling_group" "sftp-asg" {
+  name                 = "sftp-asg"
+  min_size             = 1
+  max_size             = 3
+  launch_configuration = aws_launch_configuration.sftp-launch-config.name
+  tag {
+    key = "Environment"
+    value = "Development"
+    propagate_at_launch = true
+  }
+  tag {
+    key = "Name"
+    value = "SFTP Server"
+    propagate_at_launch = true
+  }
+  tag {
+    key = "OS"
+    value = "Ubuntu"
+    propagate_at_launch = true
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+
+# output "sftp_server_ip" {
+#   value = aws_instance.sftp-us-west-2.public_ip
+# }
