@@ -17,7 +17,7 @@ echo -e "\033[1;33m[INFO] Creating SFTP group 'sftpusers'...\033[0m"
 sudo groupadd sftpusers || echo "[WARN] 'sftpusers' group may already exist."
 
 # Define users to be created
-USERS=("user1" "user2" "user3" "user4")
+USERS=("user1" "user2" "user3")
 
 # Create users and configure them for SFTP-only access
 for USER in "${USERS[@]}"; do
