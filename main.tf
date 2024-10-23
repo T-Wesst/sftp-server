@@ -9,8 +9,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-west-2"
-
+  region = var.region
 }
 
 resource "aws_security_group" "sftp-security_group" {
@@ -50,9 +49,9 @@ output "sftp_server_ip" {
 }
 
 resource "aws_instance" "sftp-us-west-2" {
-  ami             = "ami-04dd23e62ed049936"
+  ami             = var.ami
   instance_type   = "t2.micro"
-  key_name        = "sftp-us-west-2"
+  key_name        = var.key_name
   security_groups = [aws_security_group.sftp-security_group.name]
 
   user_data = base64encode(file("./scripts/setup.sh"))
