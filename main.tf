@@ -70,7 +70,10 @@ resource "aws_autoscaling_group" "sftp-asg" {
   name                 = "sftp-asg"
   min_size             = 1
   max_size             = 3
-  launch_configuration = aws_launch_configuration.sftp-launch-config.name
+  desired_capacity = 1
+  availability_zones = [var.region]
+  
+  launch_configuration = "${aws_launch_configuration.sftp-launch-config.name}"
   tag {
     key = "Environment"
     value = "Development"
@@ -78,7 +81,7 @@ resource "aws_autoscaling_group" "sftp-asg" {
   }
   tag {
     key = "Name"
-    value = "SFTP Server"
+    value = "SFTP Server ASG"
     propagate_at_launch = true
   }
   tag {
@@ -91,6 +94,37 @@ resource "aws_autoscaling_group" "sftp-asg" {
   }
 }
 
+# Network Load Balancer
+resource "aws_lb" "sftp_nlb" {
+  name = "sftp-nlb"
+  load_balancer_type = "network"
+  internal = false
+  security_groups = [aws_autoscaling_group.sftp-asg]
+  enable_deletion_protection = false
+  tags = {
+    Name = "SFTP NLB"
+  }
+}
+
+# Target Group for Load Balancer
+resource "aws_lb_target_group" "sftp_target_group" {
+  name = "sftp-target-group"
+  port = 22
+  protocol = "tcp"
+  # vpc_id = 
+  # target_type = instance | ip
+  health_check {
+    interval = 30
+    port = 22
+    protocol = "tcp"
+    timeout = 10
+    healthy_threshold = 3
+    unhealthy_threshold = 3
+  }
+  tags = {
+    Name = "SFTP Target Group"
+  }
+}
 
 # output "sftp_server_ip" {
 #   value = aws_instance.sftp-us-west-2.public_ip
