@@ -25,7 +25,7 @@ resource "aws_security_group" "sftp-security-group" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [data.aws_vpc.default.cidr_block]
   }
   tags = {
     Name        = "SFTP Security Group"
@@ -41,7 +41,7 @@ resource "aws_launch_template" "sftp-launch-config" {
   key_name               = var.key_name
   description            = "SFTP Server Template"
   vpc_security_group_ids = [aws_security_group.sftp-security-group.id]
-  
+
   # Cloud-init script
   user_data = base64encode(file("./scripts/setup.sh"))
   block_device_mappings {
@@ -66,12 +66,13 @@ resource "aws_launch_template" "sftp-launch-config" {
 
 # Network Load Balancer
 resource "aws_lb" "sftp_nlb" {
-  load_balancer_type = "network"
-  name               = "sftp-nlb"
-  internal           = false
-  ip_address_type    = "ipv4"
-  subnets            = [var.subnet_id]
-  enable_deletion_protection = false
+  load_balancer_type               = "network"
+  name                             = "sftp-nlb"
+  internal                         = false
+  ip_address_type                  = "ipv4"
+  subnets                          = [var.subnet_id]
+  enable_deletion_protection       = false
+  enable_cross_zone_load_balancing = true
   tags = {
     Name = "SFTP NLB"
   }
@@ -112,8 +113,7 @@ resource "aws_autoscaling_group" "sftp-asg" {
     id      = aws_launch_template.sftp-launch-config.id
     version = "$Latest"
   }
-
-  vpc_zone_identifier = [var.subnet_id]
+  vpc_zone_identifier       = [var.subnet_id]
   target_group_arns         = [aws_lb_target_group.sftp_target_group.arn]
   health_check_type         = "ELB"
   health_check_grace_period = 300
@@ -139,4 +139,34 @@ resource "aws_lb_listener" "sftp_lister" {
   tags = {
     Name = "SFTP NLB Listener"
   }
+}
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_instances" "asg_instances" {
+  filter {
+    name   = "tag:Name"
+    values = ["SFTP Server ASG Instance"]
+  }
+  filter {
+    name   = "instance-state-name"
+    values = ["running"]
+  }
+}
+
+output "load_balancer_dns_name" {
+  description = "DNS name of the SFTP Load balancer"
+  value       = aws_lb.sftp_nlb.dns_name
+}
+
+output "asg_instances_public_ip" {
+  description = "SFTP Server Public IPs"
+  value       = data.aws_instances.asg_instances.public_ips
+}
+
+output "default_vpc_cidr_block" {
+  description = "Default VPC CIDR block"
+  value       = data.aws_vpc.default.cidr_block
 }
